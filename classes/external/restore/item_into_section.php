@@ -43,10 +43,6 @@ class item_into_section extends external_api
             'course_modules_to_include' => $course_modules_to_include,
         ]);
 
-        self::validate_context(
-            \context_user::instance($USER->id)
-        );
-
         $item = $base_factory->item()->repository()->get_by_id($params['item_id']);
         if (!$item) {
             return false;
@@ -58,6 +54,13 @@ class item_into_section extends external_api
 
         $course_id = (int)$DB->get_field('course_sections', 'course', ['id' => $params['section_id']], MUST_EXIST);
         $context = \core\context\course::instance($course_id);
+        self::validate_context($context);
+
+        if ($item->is_section()) {
+            require_capability('moodle/restore:restoresection', $context);
+        } else {
+            require_capability('moodle/restore:restoreactivity', $context);
+        }
 
         $settings = [];
 

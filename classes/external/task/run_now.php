@@ -7,6 +7,7 @@ defined('MOODLE_INTERNAL') || die();
 
 // @codeCoverageIgnoreEnd
 
+use context_system;
 use core_external\external_api;
 use core_external\external_description;
 use core_external\external_function_parameters;
@@ -51,6 +52,8 @@ class run_now extends external_api
                 get_string('crondisabled', 'tool_task')
             );
         }
+
+        require_capability('block/sharing_cart:manual_run_task', context_system::instance());
 
         $task = $DB->get_record(
             'task_adhoc',

@@ -58,9 +58,13 @@ class section_into_sharing_cart extends external_api
             throw new \Exception("Section does not exist");
         }
 
-        self::validate_context(
-            \context_course::instance($section->course)
-        );
+        $context = \context_course::instance($section->course);
+        self::validate_context($context);
+        require_capability('moodle/backup:backupsection', $context);
+
+        if (empty($section->sequence)) {
+            throw new \Exception('Section is empty');
+        }
 
         $item = $base_factory->item()->repository()->insert_section(
             $section,

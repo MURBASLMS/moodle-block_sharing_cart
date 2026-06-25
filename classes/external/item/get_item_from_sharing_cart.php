@@ -56,7 +56,10 @@ class get_item_from_sharing_cart extends external_api
 
         $allow_to_run_now = has_capability('block/sharing_cart:manual_run_task', \core\context\system::instance(), $USER);
         $response->show_run_now = $allow_to_run_now && !$is_running && !$is_failed && $has_waited_5_seconds;
-        $response->can_copy_to_course = has_capability('moodle/restore:restoreactivity', \core\context\course::instance($course_id), $USER);
+
+        $context = \core\context\course::instance($course_id);
+        $capability = $item->is_section() ? 'moodle/restore:restoresection' : 'moodle/restore:restoreactivity';
+        $response->can_copy_to_course = has_capability($capability, $context, $USER);
 
         return $response;
     }

@@ -41,9 +41,9 @@ class course_module_into_sharing_cart extends external_api
             'settings' => $settings,
         ]);
 
-        self::validate_context(
-            \context_module::instance($params['course_module_id'])
-        );
+        $context = \context_module::instance($params['course_module_id']);
+        self::validate_context($context);
+        require_capability('moodle/backup:backupactivity', $context);
 
         $item = $base_factory->item()->repository()->insert_activity(
             $params['course_module_id'],

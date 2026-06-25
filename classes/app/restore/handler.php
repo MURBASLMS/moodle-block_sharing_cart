@@ -39,11 +39,6 @@ class handler
 
         if(!$this->restore_is_valid($item_id, $section_id)) return null;
 
-        // NEW: If restoring a subsection, auto-include its child module IDs
-        if ($item->is_subsection()) {
-            $settings = $this->auto_include_subsection_children($settings, $backup_file);
-        }
-
         $restore_controller = $this->base_factory->restore()->restore_controller(
             $backup_file,
             $course_id,
@@ -51,70 +46,6 @@ class handler
         );
 
         return $this->queue_async_restore($restore_controller, $item, $settings);
-    }
-
-    /**
-     * When restoring a subsection, automatically include all child module IDs.
-     * This prevents the subsection from being restored empty.
-     */
-    private function auto_include_subsection_children(
-        array $settings,
-        \stored_file $backup_file
-    ): array {
-        try {
-            // Get the backup tree to extract module IDs
-            $backup_tree = $this->base_factory->backup()->handler()->get_backup_item_tree($backup_file);
-
-            // Extract all module IDs from the tree
-            $child_module_ids = $this->extract_all_module_ids_from_tree($backup_tree);
-
-            if (!empty($child_module_ids)) {
-                // Add or merge with existing course_modules_to_include
-                $existing_modules = $settings['course_modules_to_include'] ?? [];
-                $settings['course_modules_to_include'] = array_unique(
-                    array_merge($existing_modules, $child_module_ids)
-                );
-            }
-        } catch (\Exception $e) {
-            // If extraction fails, log it but don't break the restore
-            mtrace("Warning: Could not auto-include subsection children: " . $e->getMessage());
-        }
-
-        return $settings;
-    }
-
-    /**
-     * Recursively extract all module IDs from the backup tree.
-     * This includes modules nested under subsections.
-     */
-    private function extract_all_module_ids_from_tree(array $tree): array {
-        $module_ids = [];
-
-        foreach ($tree as $section) {
-            if (!isset($section->activities)) {
-                continue;
-            }
-
-            foreach ($section->activities as $activity) {
-                // If this is a subsection, extract its nested activities
-                if (isset($activity->modulename) && $activity->modulename === 'subsection') {
-                    if (isset($activity->subsection_activities)) {
-                        foreach ($activity->subsection_activities as $subsection_activity) {
-                            if (isset($subsection_activity->moduleid)) {
-                                $module_ids[] = (int)$subsection_activity->moduleid;
-                            }
-                        }
-                    }
-                } else {
-                    // Regular activity
-                    if (isset($activity->moduleid)) {
-                        $module_ids[] = (int)$activity->moduleid;
-                    }
-                }
-            }
-        }
-
-        return array_filter($module_ids); // Remove any falsy values
     }
 
     /**
